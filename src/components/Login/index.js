@@ -1,5 +1,5 @@
-import {Component} from 'react'
-import {Redirect} from 'react-router-dom'
+import { Component } from 'react'
+import { Redirect } from 'react-router-dom'
 import Cookies from 'js-cookie'
 import styled from 'styled-components'
 
@@ -101,6 +101,19 @@ const ErrorMsg = styled.p`
   font-family: 'Roboto', sans-serif;
 `
 
+const SignInBtn = styled.button`
+  margin-top: 12px;
+  padding: 12px;
+  background-color: transparent;
+  color: ${props => (props.isDark ? '#ffffff' : '#4f46e5')};
+  border: 1px solid #4f46e5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+`
+
 class Login extends Component {
   state = {
     username: '',
@@ -110,50 +123,69 @@ class Login extends Component {
     showError: false,
   }
 
-  onChangeUsername = e => this.setState({username: e.target.value})
+  onChangeUsername = e => this.setState({ username: e.target.value })
 
-  onChangePassword = e => this.setState({password: e.target.value})
+  onChangePassword = e => this.setState({ password: e.target.value })
 
   onToggleShowPassword = () =>
-    this.setState(prev => ({showPassword: !prev.showPassword}))
+    this.setState(prev => ({ showPassword: !prev.showPassword }))
 
   onSubmitSuccess = jwtToken => {
-    const {history} = this.props
-    Cookies.set('jwt_token', jwtToken, {expires: 30})
+    const { history } = this.props
+    Cookies.set('jwt_token', jwtToken, { expires: 30 })
     history.replace('/')
   }
 
   onSubmitFailure = errorMsg => {
-    this.setState({errorMsg: `*${errorMsg}`, showError: true})
+    this.setState({ errorMsg: `*${errorMsg}`, showError: true })
   }
 
   onSubmitForm = async e => {
-    e.preventDefault()
-    const {username, password} = this.state
-    const userDetails = {username, password}
+    if (e !== undefined) {
+      e.preventDefault()
+    }
+    const { username, password } = this.state
+    const userDetails = { username, password }
     const url = 'https://apis.ccbp.in/login'
     const options = {
       method: 'POST',
       body: JSON.stringify(userDetails),
     }
-    const response = await fetch(url, options)
-    const data = await response.json()
-    if (response.ok) {
-      this.onSubmitSuccess(data.jwt_token)
-    } else {
-      this.onSubmitFailure(data.error_msg)
+    this.setState({ showError: false, errorMsg: '' })
+    try {
+      const response = await fetch(url, options)
+      const data = await response.json()
+      if (response.ok) {
+        this.onSubmitSuccess(data.jwt_token)
+      } else {
+        this.onSubmitFailure(data.error_msg)
+      }
+    } catch (error) {
+      this.onSubmitFailure('Unable to login')
     }
   }
 
+  onClickSignIn = () => {
+    this.setState(
+      {
+        username: 'rahul',
+        password: 'rahul@2021',
+        showError: false,
+        errorMsg: '',
+      },
+      () => this.onSubmitForm({ preventDefault: () => { } }),
+    )
+  }
+
   render() {
-    const {username, password, showPassword, errorMsg, showError} = this.state
+    const { username, password, showPassword, errorMsg, showError } = this.state
     const token = Cookies.get('jwt_token')
     if (token !== undefined) {
       return <Redirect to="/" />
     }
     return (
       <NxtWatchContext.Consumer>
-        {({isDarkTheme}) => {
+        {({ isDarkTheme }) => {
           const logoUrl = isDarkTheme
             ? 'https://assets.ccbp.in/frontend/react-js/nxt-watch-logo-dark-theme-img.png'
             : 'https://assets.ccbp.in/frontend/react-js/nxt-watch-logo-light-theme-img.png'
@@ -197,6 +229,13 @@ class Login extends Component {
                     </CheckboxLabel>
                   </CheckboxContainer>
                   <LoginBtn type="submit">Login</LoginBtn>
+                  <SignInBtn
+                    type="button"
+                    onClick={this.onClickSignIn}
+                    isDark={isDarkTheme}
+                  >
+                    Sign in
+                  </SignInBtn>
                   {showError && <ErrorMsg>{errorMsg}</ErrorMsg>}
                 </FormEl>
               </LoginCard>
@@ -206,6 +245,7 @@ class Login extends Component {
       </NxtWatchContext.Consumer>
     )
   }
+
 }
 
 export default Login
